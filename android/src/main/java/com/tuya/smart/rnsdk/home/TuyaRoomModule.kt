@@ -11,7 +11,7 @@ import com.tuya.smart.rnsdk.utils.Constant.getIResultCallback
 import com.tuya.smart.rnsdk.utils.ReactParamsCheck
 
 
-class TuyaRoomModule(reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext) {
+class TuyaRoomModule(reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext!!) {
     override fun getName(): String {
         return "TuyaRoomModule"
     }
@@ -45,6 +45,14 @@ class TuyaRoomModule(reactContext: ReactApplicationContext?) : ReactContextBaseJ
     fun removeGroup(params: ReadableMap, promise: Promise) {
         if (ReactParamsCheck.checkParams(arrayOf(ROOMID, GROUPID), params)) {
             getRoomInstance(params.getDouble(ROOMID)).removeGroup(params.getDouble(GROUPID).toLong(), getIResultCallback(promise))
+        }
+    }
+
+    /* 添加群组  */
+    @ReactMethod
+    fun addGroup(params: ReadableMap, promise: Promise) {
+        if (ReactParamsCheck.checkParams(arrayOf(ROOMID, GROUPID), params)) {
+            getRoomInstance(params.getDouble(ROOMID)).addGroup(params.getDouble(GROUPID).toLong(), getIResultCallback(promise))
         }
     }
 

@@ -1,7 +1,10 @@
 package com.tuya.smart.rnsdk.activator
 
+import android.content.Intent
+import android.provider.Settings
 import android.util.Log
 import com.facebook.react.bridge.*
+import com.tuya.smart.android.common.utils.WiFiUtil
 import com.tuya.smart.home.sdk.TuyaHomeSdk
 import com.tuya.smart.home.sdk.builder.ActivatorBuilder
 import com.tuya.smart.rnsdk.utils.*
@@ -21,7 +24,7 @@ import com.tuya.smart.rnsdk.utils.Constant.DEVID
 import com.tuya.smart.rnsdk.utils.Constant.TYPE
 
 
-class TuyaActivatorModule(reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext) {
+class TuyaActivatorModule(reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext!!) {
 
     var mITuyaActivator: ITuyaActivator?=null
     var mTuyaGWActivator: ITuyaActivator?=null
@@ -29,6 +32,24 @@ class TuyaActivatorModule(reactContext: ReactApplicationContext?) : ReactContext
         return "TuyaActivatorModule"
     }
 
+    @ReactMethod
+    fun getCurrentWifi(params: ReadableMap, successCallback: Callback,
+                       errorCallback: Callback) {
+        successCallback.invoke(WiFiUtil.getCurrentSSID(reactApplicationContext.applicationContext));
+    }
+
+    @ReactMethod
+    fun openNetworkSettings(params: ReadableMap) {
+        val currentActivity = currentActivity
+        if (currentActivity == null) {
+            return
+        }
+        try {
+            currentActivity.startActivity(Intent(Settings.ACTION_SETTINGS))
+        } catch (e: Exception) {
+        }
+
+    }
 
     @ReactMethod
     fun initActivator(params: ReadableMap, promise: Promise) {
@@ -39,7 +60,7 @@ class TuyaActivatorModule(reactContext: ReactApplicationContext?) : ReactContext
                             .setSsid(params.getString(SSID))
                             .setContext(reactApplicationContext.applicationContext)
                             .setPassword(params.getString(PASSWORD))
-                            .setActivatorModel(ActivatorModelEnum.valueOf(params.getString(TYPE)))
+                            .setActivatorModel(ActivatorModelEnum.valueOf(params.getString(TYPE)!!))
                             .setTimeOut(params.getInt(TIME).toLong())
                             .setToken(token).setListener(getITuyaSmartActivatorListener(promise)))
                     mITuyaActivator?.start()
@@ -82,7 +103,7 @@ class TuyaActivatorModule(reactContext: ReactApplicationContext?) : ReactContext
                         device_bind_success 设备绑定成功，但还未上线，此时设备处于离线状态，无法控制设备。
                          */
                         override fun onStep(var1: String, var2: Any) {
-                            promise.reject(var1,"")
+                           // promise.reject(var1,"")
                         }
                     })
 
@@ -127,7 +148,8 @@ class TuyaActivatorModule(reactContext: ReactApplicationContext?) : ReactContext
                device_bind_success 设备绑定成功，但还未上线，此时设备处于离线状态，无法控制设备。
              */
             override fun onStep(var1: String, var2: Any) {
-                promise.reject(var1,"")
+                // IOS 没有onStep保持一致
+                //promise.reject(var1,"")
             }
         }
     }

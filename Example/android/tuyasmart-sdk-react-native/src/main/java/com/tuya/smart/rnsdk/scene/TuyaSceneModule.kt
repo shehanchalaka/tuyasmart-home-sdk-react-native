@@ -59,7 +59,7 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 
-class TuyaSceneModule(reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext) {
+class TuyaSceneModule(reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext!!) {
     override fun getName(): String {
         return "TuyaSceneModule"
     }
@@ -304,64 +304,80 @@ class TuyaSceneModule(reactContext: ReactApplicationContext?) : ReactContextBase
             var placebeanList = ArrayList<PlaceFacadeBean>();
             var k = 0
             var sceneConditionList = ArrayList<SceneCondition>()
-            while (k < conditionLists.size()) {
-                val condition = conditionLists.getMap(k)
-                // 自动化条件创建方式有三个方法 四种类型 首先根据方法来排除 然后根据type来对weather排除
-                if (condition.getInt(ENTITY_TYPE) == ENTITY_TYPE_WEATHER) {
-                    val placeBean = condition.getMap("placeBean")
-                    val placeFacadeBean = PlaceFacadeBean();
-                    placeFacadeBean.area = placeBean.getString("area")
-                    placeFacadeBean.city = placeBean.getString("city")
-                    placeFacadeBean.isChoose = placeBean.getBoolean("choose")
-                    placeFacadeBean.province = placeBean.getString("province")
-                    placeFacadeBean.cityId = placeBean.getString("cityId").toLong();
-                    placebeanList.add(placeFacadeBean)
-                    if (condition.getString(TYPE) == "temp") {
-                        val weatherCondition = SceneCondition.createWeatherCondition(
-                                placeFacadeBean, //城市
-                                conditionLists.getMap(k).getString(TYPE), //类别
-                                getTempRule(condition.getString(TYPE), condition.getString(RANGE), condition.getString(RULE))            //规则
-                        )
-                        sceneConditionList.add(weatherCondition)
-                    } else {
-                        val weatherCondition = SceneCondition.createWeatherCondition(
-                                placeFacadeBean, //城市
-                                conditionLists.getMap(k).getString(TYPE), //类别
-                                getEnumRule(condition.getString(TYPE), condition.getString(RULE))            //规则
-                        )
-                        sceneConditionList.add(weatherCondition)
+            if (conditionLists != null) {
+                while (k < conditionLists.size()) {
+                    val condition = conditionLists.getMap(k)
+                    // 自动化条件创建方式有三个方法 四种类型 首先根据方法来排除 然后根据type来对weather排除
+                    if (condition != null) {
+                        if (condition.getInt(ENTITY_TYPE) == ENTITY_TYPE_WEATHER) {
+                            val placeBean = condition!!.getMap("placeBean")
+                            val placeFacadeBean = PlaceFacadeBean();
+                            if (placeBean != null) {
+                                placeFacadeBean.area = placeBean.getString("area")
+                            }
+                            if (placeBean != null) {
+                                placeFacadeBean.city = placeBean.getString("city")
+                            }
+                            if (placeBean != null) {
+                                placeFacadeBean.isChoose = placeBean.getBoolean("choose")
+                            }
+                            if (placeBean != null) {
+                                placeFacadeBean.province = placeBean.getString("province")
+                            }
+                            if (placeBean != null) {
+                                placeFacadeBean.cityId = placeBean.getString("cityId")!!.toLong()
+                            };
+                            placebeanList.add(placeFacadeBean)
+                            if (condition.getString(TYPE) == "temp") {
+                                val weatherCondition = SceneCondition.createWeatherCondition(
+                                        placeFacadeBean, //城市
+                                        conditionLists.getMap(k)!!.getString(TYPE), //类别
+                                        getTempRule(condition.getString(TYPE)!!, condition.getString(RANGE)!!, condition.getString(RULE)!!)            //规则
+                                )
+                                sceneConditionList.add(weatherCondition)
+                            } else {
+                                val weatherCondition = SceneCondition.createWeatherCondition(
+                                        placeFacadeBean, //城市
+                                        conditionLists.getMap(k)!!.getString(TYPE), //类别
+                                        getEnumRule(condition.getString(TYPE)!!, condition.getString(RULE)!!)            //规则
+                                )
+                                sceneConditionList.add(weatherCondition)
+                            }
+                        } else if (condition != null) {
+                            if (condition.getInt(ENTITY_TYPE) == ENTITY_TYPE_DEVICE) { //创建设备
+                                var rules = ArrayList<Rule>()
+                                rules.add(getRules(condition!!))
+                                val devCondition = SceneCondition.createDevCondition(TuyaHomeSdk.getDataInstance().getDeviceBean(condition.getString(DEVID)),
+                                        condition.getString(DPID),
+                                        getRules(condition))
+                                sceneConditionList.add(devCondition)
+                            } else { //创建定时
+                                /**
+                                 *
+                                 * @param timeZoneId 时区，格式例如"Asia/Shanghai"
+                                 * @param loops 7位字符串，每一位表示星期几，第一位表示星期日，第二位表示星期一，
+                                 * 依次类推，表示在哪些天启用定时。0表示未选中，1表示选中.格式例如只选中星期一
+                                 * 星期二："0110000"。如果都未选中，则表示定时只执行一次，格式："0000000"
+                                 * @param time 时间，24小时制。格式例如"08:00",如果用户使用12小时制，需要
+                                 * 开发者将之转换为24小时制上传
+                                 * @param date 日期，格式例如"20180310"
+                                 * @return
+                                 */
+                                //      TimerRule timerRule = TimerRule.newInstance("Asia/Shanghai","0111110","16:00","20180310")
+                                var timeRule = TimerRule.newInstance(condition.getString("loop"), condition.getString("time"), condition.getString("date"))
+                                val timerCondition = SceneCondition.createTimerCondition(
+                                        condition.getString(DISPLAY),
+                                        condition.getString(NAME),
+                                        condition.getString(TYPE),
+                                        timeRule
+                                )
+                                sceneConditionList.add(timerCondition)
+                            }
+                        }
                     }
-                } else if (condition.getInt(ENTITY_TYPE) == ENTITY_TYPE_DEVICE) { //创建设备
-                    var rules = ArrayList<Rule>()
-                    rules.add(getRules(condition))
-                    val devCondition = SceneCondition.createDevCondition(TuyaHomeSdk.getDataInstance().getDeviceBean(condition.getString(DEVID)),
-                            condition.getString(DPID),
-                            getRules(condition))
-                    sceneConditionList.add(devCondition)
-                } else { //创建定时
-                    /**
-                     *
-                     * @param timeZoneId 时区，格式例如"Asia/Shanghai"
-                     * @param loops 7位字符串，每一位表示星期几，第一位表示星期日，第二位表示星期一，
-                     * 依次类推，表示在哪些天启用定时。0表示未选中，1表示选中.格式例如只选中星期一
-                     * 星期二："0110000"。如果都未选中，则表示定时只执行一次，格式："0000000"
-                     * @param time 时间，24小时制。格式例如"08:00",如果用户使用12小时制，需要
-                     * 开发者将之转换为24小时制上传
-                     * @param date 日期，格式例如"20180310"
-                     * @return
-                     */
-                    //      TimerRule timerRule = TimerRule.newInstance("Asia/Shanghai","0111110","16:00","20180310")
-                    var timeRule = TimerRule.newInstance(condition.getString("loop"), condition.getString("time"), condition.getString("date"))
-                    val timerCondition = SceneCondition.createTimerCondition(
-                            condition.getString(DISPLAY),
-                            condition.getString(NAME),
-                            condition.getString(TYPE),
-                            timeRule
-                    )
-                    sceneConditionList.add(timerCondition)
-                }
 
-                k++
+                    k++
+                }
             }
             TuyaHomeSdk.getSceneManagerInstance().createScene(
                     params.getDouble(HOMEID).toLong(),//家庭id
@@ -428,52 +444,66 @@ class TuyaSceneModule(reactContext: ReactApplicationContext?) : ReactContextBase
                                     var placebeanList = ArrayList<PlaceFacadeBean>();
                                     var k = 0
                                     var sceneConditionList = ArrayList<SceneCondition>()
-                                    while (k < conditionLists.size()) {
-                                        val condition = conditionLists.getMap(k)
-                                        var placeBean = conditionLists.getMap(k).getMap("placeBean")
-                                        var placeFacadeBean = PlaceFacadeBean();
-                                        placeFacadeBean.area = placeBean.getString("area")
-                                        placeFacadeBean.city = placeBean.getString("city")
-                                        placeFacadeBean.isChoose = placeBean.getBoolean("choose")
-                                        placeFacadeBean.province = placeBean.getString("province")
-                                        placeFacadeBean.cityId = placeBean.getString("cityId").toLong();
-                                        placebeanList.add(placeFacadeBean)
-                                        // 自动化条件创建方式有三个方法 四种类型 首先根据方法来排除 然后根据type来对weather排除
-                                        if (condition.getInt(ENTITY_TYPE) == ENTITY_TYPE_WEATHER) {
-                                            if (condition.getString(TYPE) == "temp") {
-                                                val weatherCondition = SceneCondition.createWeatherCondition(
-                                                        placeFacadeBean, //城市
-                                                        conditionLists.getMap(k).getString(TYPE), //类别
-                                                        getTempRule(condition.getString(TYPE), condition.getString(RANGE), condition.getString(RULE))            //规则
-                                                )
-                                                sceneConditionList.add(weatherCondition)
-                                            } else {
-                                                val weatherCondition = SceneCondition.createWeatherCondition(
-                                                        placeFacadeBean, //城市
-                                                        conditionLists.getMap(k).getString(TYPE), //类别
-                                                        getEnumRule(condition.getString(TYPE), condition.getString(RULE))            //规则
-                                                )
-                                                sceneConditionList.add(weatherCondition)
+                                    if (conditionLists != null) {
+                                        while (k < conditionLists.size()) {
+                                            val condition = conditionLists.getMap(k)
+                                            var placeBean = conditionLists.getMap(k)!!.getMap("placeBean")
+                                            var placeFacadeBean = PlaceFacadeBean();
+                                            if (placeBean != null) {
+                                                placeFacadeBean.area = placeBean.getString("area")
                                             }
-                                        } else if (condition.getInt(ENTITY_TYPE) == ENTITY_TYPE_DEVICE) { //创建设备
-                                            var rules = ArrayList<Rule>()
-                                            rules.add(getRules(condition))
-                                            val devCondition = SceneCondition.createDevCondition(TuyaHomeSdk.getDataInstance().getDeviceBean(condition.getString(DEVID)),
-                                                    condition.getString(DPID),
-                                                    getRules(condition))
-                                            sceneConditionList.add(devCondition)
-                                        } else { //创建定时
-                                            //      TimerRule timerRule = TimerRule.newInstance("Asia/Shanghai","0111110","16:00","20180310")
-                                            var timeRule = TimerRule.newInstance(condition.getString("loop"), condition.getString("time"), condition.getString("date"))
-                                            val timerCondition = SceneCondition.createTimerCondition(
-                                                    condition.getString(DISPLAY),
-                                                    condition.getString(NAME),
-                                                    condition.getString(TYPE),
-                                                    timeRule
-                                            )
-                                            sceneConditionList.add(timerCondition)
+                                            if (placeBean != null) {
+                                                placeFacadeBean.city = placeBean.getString("city")
+                                            }
+                                            if (placeBean != null) {
+                                                placeFacadeBean.isChoose = placeBean.getBoolean("choose")
+                                            }
+                                            if (placeBean != null) {
+                                                placeFacadeBean.province = placeBean.getString("province")
+                                            }
+                                            if (placeBean != null) {
+                                                placeFacadeBean.cityId = placeBean.getString("cityId")!!.toLong()
+                                            };
+                                            placebeanList.add(placeFacadeBean)
+                                            // 自动化条件创建方式有三个方法 四种类型 首先根据方法来排除 然后根据type来对weather排除
+                                            if (condition != null) {
+                                                if (condition.getInt(ENTITY_TYPE) == ENTITY_TYPE_WEATHER) {
+                                                    if (condition.getString(TYPE) == "temp") {
+                                                        val weatherCondition = SceneCondition.createWeatherCondition(
+                                                                placeFacadeBean, //城市
+                                                                conditionLists.getMap(k)!!.getString(TYPE), //类别
+                                                                getTempRule(condition.getString(TYPE)!!, condition.getString(RANGE)!!, condition.getString(RULE)!!)            //规则
+                                                        )
+                                                        sceneConditionList.add(weatherCondition)
+                                                    } else {
+                                                        val weatherCondition = SceneCondition.createWeatherCondition(
+                                                                placeFacadeBean, //城市
+                                                                conditionLists.getMap(k)!!.getString(TYPE), //类别
+                                                                getEnumRule(condition.getString(TYPE)!!, condition.getString(RULE)!!)            //规则
+                                                        )
+                                                        sceneConditionList.add(weatherCondition)
+                                                    }
+                                                } else if (condition.getInt(ENTITY_TYPE) == ENTITY_TYPE_DEVICE) { //创建设备
+                                                    var rules = ArrayList<Rule>()
+                                                    rules.add(getRules(condition))
+                                                    val devCondition = SceneCondition.createDevCondition(TuyaHomeSdk.getDataInstance().getDeviceBean(condition.getString(DEVID)),
+                                                            condition.getString(DPID),
+                                                            getRules(condition))
+                                                    sceneConditionList.add(devCondition)
+                                                } else { //创建定时
+                                                    //      TimerRule timerRule = TimerRule.newInstance("Asia/Shanghai","0111110","16:00","20180310")
+                                                    var timeRule = TimerRule.newInstance(condition.getString("loop"), condition.getString("time"), condition.getString("date"))
+                                                    val timerCondition = SceneCondition.createTimerCondition(
+                                                            condition.getString(DISPLAY),
+                                                            condition.getString(NAME),
+                                                            condition.getString(TYPE),
+                                                            timeRule
+                                                    )
+                                                    sceneConditionList.add(timerCondition)
+                                                }
+                                            }
+                                            k++
                                         }
-                                        k++
                                     }
                                     item.conditions = sceneConditionList
                                     getScene(item.id)?.modifyScene(
@@ -505,28 +535,28 @@ class TuyaSceneModule(reactContext: ReactApplicationContext?) : ReactContextBase
     @ReactMethod
     fun executeScene(params: ReadableMap, promise: Promise) {
         if (ReactParamsCheck.checkParams(arrayOf(SCENEID), params)) {
-            getScene(params.getString(SCENEID))?.executeScene(Constant.getIResultCallback(promise))
+            getScene(params.getString(SCENEID)!!)?.executeScene(Constant.getIResultCallback(promise))
         }
     }
 
     @ReactMethod
     fun deleteScene(params: ReadableMap, promise: Promise) {
         if (ReactParamsCheck.checkParams(arrayOf(SCENEID), params)) {
-            getScene(params.getString(SCENEID))?.deleteScene(Constant.getIResultCallback(promise))
+            getScene(params.getString(SCENEID)!!)?.deleteScene(Constant.getIResultCallback(promise))
         }
     }
 
     @ReactMethod
     fun enableScene(params: ReadableMap, promise: Promise) {
         if (ReactParamsCheck.checkParams(arrayOf(SCENEID), params)) {
-            getScene(params.getString(SCENEID))?.enableScene(params.getString(SCENEID), Constant.getIResultCallback(promise))
+            getScene(params.getString(SCENEID)!!)?.enableScene(params.getString(SCENEID), Constant.getIResultCallback(promise))
         }
     }
 
     @ReactMethod
     fun disableScene(params: ReadableMap, promise: Promise) {
         if (ReactParamsCheck.checkParams(arrayOf(SCENEID), params)) {
-            getScene(params.getString(SCENEID))?.disableScene(params.getString(SCENEID), Constant.getIResultCallback(promise))
+            getScene(params.getString(SCENEID)!!)?.disableScene(params.getString(SCENEID), Constant.getIResultCallback(promise))
         }
     }
 
@@ -541,9 +571,9 @@ class TuyaSceneModule(reactContext: ReactApplicationContext?) : ReactContextBase
     fun sortSceneList(params: ReadableMap, promise: Promise) {
         if (ReactParamsCheck.checkParams(arrayOf(HOMEID, SCENEIDS), params)) {
             var list = java.util.ArrayList<String>()
-            var length = params.getArray(SCENEIDS).size()-1
+            var length = params.getArray(SCENEIDS)!!.size()-1
             for (index in 0..length) {
-                list.add(params.getArray(Constant.SCENEIDS).getString(index))
+                list.add(params.getArray(Constant.SCENEIDS)!!.getString(index)!!)
             }
             TuyaHomeSdk.getSceneManagerInstance().sortSceneList(
                     params.getDouble(HOMEID).toLong(), //家庭列表
@@ -557,7 +587,7 @@ class TuyaSceneModule(reactContext: ReactApplicationContext?) : ReactContextBase
     fun onDestroy(params: ReadableMap) {
         TuyaHomeSdk.getSceneManagerInstance().onDestroy();
         if (ReactParamsCheck.checkParams(arrayOf(SCENEID), params)) {
-            getScene(params.getString(SCENEID))?.onDestroy()
+            getScene(params.getString(SCENEID)!!)?.onDestroy()
         }
     }
 
@@ -572,16 +602,20 @@ class TuyaSceneModule(reactContext: ReactApplicationContext?) : ReactContextBase
         var tasks = ArrayList<SceneTask>()
         var i = 0
         var j = 0
-        while (j < array.size()) {
-            while (i < devidsArray.size()) {
-                if (array.getMap(i).getString(DEVID) == devidsArray.getString(i)) {
-                    val hashMap = hashMapOf<String, Any>()
-                    hashMap.put(array.getMap(i).getDouble(DPID).toInt().toString(), array.getMap(i).getBoolean(VALUE))
-                    tasks.add(createTask(array.getMap(i).getString(DEVID), hashMap))
+        if (array != null) {
+            while (j < array.size()) {
+                if (devidsArray != null) {
+                    while (i < devidsArray.size()) {
+                        if (array.getMap(i)!!.getString(DEVID) == devidsArray.getString(i)) {
+                            val hashMap = hashMapOf<String, Any>()
+                            hashMap.put(array.getMap(i)!!.getDouble(DPID).toInt().toString(), array.getMap(i)!!.getBoolean(VALUE))
+                            tasks.add(createTask(array.getMap(i)!!.getString(DEVID)!!, hashMap))
+                        }
+                        i++;
+                    }
                 }
-                i++;
+                j++;
             }
-            j++;
         }
 
         return tasks

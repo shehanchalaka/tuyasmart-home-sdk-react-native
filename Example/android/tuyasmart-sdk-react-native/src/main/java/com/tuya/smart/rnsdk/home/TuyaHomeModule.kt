@@ -25,7 +25,7 @@ import com.tuya.smart.rnsdk.utils.Constant.getIResultCallback
 import com.tuya.smart.sdk.bean.GroupDeviceBean
 
 
-class TuyaHomeModule(reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext) {
+class TuyaHomeModule(reactContext: ReactApplicationContext?) : ReactContextBaseJavaModule(reactContext!!) {
     override fun getName(): String {
         return "TuyaHomeModule"
     }
@@ -83,9 +83,9 @@ class TuyaHomeModule(reactContext: ReactApplicationContext?) : ReactContextBaseJ
     fun sortHome(params: ReadableMap, promise: Promise) {
         if (ReactParamsCheck.checkParams(arrayOf(HOMEID, IDLIST), params)) {
             var list = ArrayList<Long>()
-            var length = params.getArray(IDLIST).size()
+            var length = params.getArray(IDLIST)!!.size()
             for (index in 0..length) {
-                list.add(params.getArray(IDLIST).getDouble(index).toLong())
+                list.add(params.getArray(IDLIST)!!.getDouble(index).toLong())
             }
             getHomeInstance(params.getDouble(HOMEID))?.sortHome(list, getIResultCallback(promise))
         }
@@ -105,9 +105,9 @@ class TuyaHomeModule(reactContext: ReactApplicationContext?) : ReactContextBaseJ
     fun createGroup(params: ReadableMap, promise: Promise) {
         if (ReactParamsCheck.checkParams(arrayOf(HOMEID, PRODUCTID, NAME, DEVIDLIST), params)) {
             var list = ArrayList<String>()
-            var length = params.getArray(DEVIDLIST).size()
+            var length = params.getArray(DEVIDLIST)!!.size()
             for (index in 0..length) {
-                list.add(params.getArray(DEVIDLIST).getString(index))
+                list.add(params.getArray(DEVIDLIST)!!.getString(index)!!)
             }
             getHomeInstance(params.getDouble(HOMEID))?.createGroup(
                     params.getString(PRODUCTID),
@@ -137,7 +137,7 @@ class TuyaHomeModule(reactContext: ReactApplicationContext?) : ReactContextBaseJ
                     map.putString("devId", var1)
                     map.putDouble("homeId", params.getDouble(HOMEID))
                     map.putString("type","onDeviceAdded");
-                    BridgeUtils.homeStatus(reactApplicationContext,map,params.getString(HOMEID))
+                    BridgeUtils.homeStatus(reactApplicationContext,map, params.getString(HOMEID)!!)
                 }
 
                 override fun onDeviceRemoved(var1: String){
@@ -145,7 +145,7 @@ class TuyaHomeModule(reactContext: ReactApplicationContext?) : ReactContextBaseJ
                     map.putString("devId", var1)
                     map.putDouble("homeId", params.getDouble(HOMEID))
                     map.putString("type","onDeviceRemoved");
-                    BridgeUtils.homeStatus(reactApplicationContext,map,params.getString(HOMEID))
+                    BridgeUtils.homeStatus(reactApplicationContext,map, params.getString(HOMEID)!!)
                 }
 
                 override fun onGroupAdded(var1: Long){
@@ -153,7 +153,7 @@ class TuyaHomeModule(reactContext: ReactApplicationContext?) : ReactContextBaseJ
                     map.putDouble("groupId", var1.toDouble())
                     map.putDouble("homeId", params.getDouble(HOMEID))
                     map.putString("type","onGroupAdded");
-                    BridgeUtils.homeStatus(reactApplicationContext,map,params.getString(HOMEID))
+                    BridgeUtils.homeStatus(reactApplicationContext,map, params.getString(HOMEID)!!)
                 }
 
                 override fun onGroupRemoved(var1: Long){
@@ -161,7 +161,7 @@ class TuyaHomeModule(reactContext: ReactApplicationContext?) : ReactContextBaseJ
                     map.putDouble("groupId", var1.toDouble())
                     map.putDouble("homeId", params.getDouble(HOMEID))
                     map.putString("type","onGroupRemoved");
-                    BridgeUtils.homeStatus(reactApplicationContext,map,params.getString(HOMEID))
+                    BridgeUtils.homeStatus(reactApplicationContext,map, params.getString(HOMEID)!!)
                 }
 
                 override fun onMeshAdded(var1: String){
@@ -169,7 +169,7 @@ class TuyaHomeModule(reactContext: ReactApplicationContext?) : ReactContextBaseJ
                     map.putDouble("meshId", var1.toDouble())
                     map.putDouble("homeId", params.getDouble(HOMEID))
                     map.putString("type","onMeshAdded");
-                    BridgeUtils.homeStatus(reactApplicationContext,map,params.getString(HOMEID))
+                    BridgeUtils.homeStatus(reactApplicationContext,map, params.getString(HOMEID)!!)
                 }
             })
         }
